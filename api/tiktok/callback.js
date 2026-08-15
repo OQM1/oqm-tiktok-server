@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     "https://oqm-tiktok-server.vercel.app/api/tiktok/callback";
 
   try {
-    // Échange du code contre un access token
+    // 1. Échange du code contre le token TikTok
     const tokenBody = new URLSearchParams({
       client_key: clientKey,
       client_secret: clientSecret,
@@ -56,11 +56,22 @@ export default async function handler(req, res) {
       });
     }
 
+    // TikTok doit nous fournir un access_token
     const accessToken = tokenData.access_token;
 
-    // Récupération du nombre de publications
+    if (!accessToken) {
+      return res.status(500).json({
+        error: "TikTok did not return an access token",
+        granted_scope: tokenData.scope || null,
+        token_type: tokenData.token_type || null
+      });
+    }
+
+    // 2. Récupération des informations TikTok
+    const fields = "open_id,display_name,video_count";
+
     const userResponse = await fetch(
-      "https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,video_count",
+      `https://open.tiktokapis.com/v2/user/info/?fields=${fields}`,
       {
         method: "GET",
         headers: {
@@ -74,16 +85,20 @@ export default async function handler(req, res) {
     if (!userResponse.ok) {
       return res.status(userResponse.status).json({
         error: "TikTok user info failed",
-        details: userData
+        details: userData,
+        granted_scope: tokenData.scope || null
       });
     }
+
+    const user = userData.data?.user;
 
     return res.status(200).json({
       status: "success",
       message: "TikTok connected successfully",
-      open_id: userData.data?.user?.open_id,
-      display_name: userData.data?.user?.display_name,
-      video_count: userData.data?.user?.video_count ?? 0
+      open_id: user?.open_id,
+      display_name: user?.display_name,
+      video_count: user?.video_count ?? 0,
+      granted_scope: tokenData.scope || null
     });
 
   } catch (err) {
@@ -91,4 +106,4 @@ export default async function handler(req, res) {
       error: "TikTok callback failed"
     });
   }
-}
+}      
