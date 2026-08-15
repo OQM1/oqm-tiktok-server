@@ -8,7 +8,7 @@ export default function handler(req, res) {
   }
 
   const redirectUri =
-    "https://oqm-tiktok-server-42lneg3f9-oqm1s-projects.vercel.app/api/tiktok/callback";
+    "https://oqm-tiktok-server.vercel.app/api/tiktok/callback";
 
   const state = crypto.randomUUID();
 
